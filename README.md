@@ -15,6 +15,8 @@ The simplest way to include these objects and functions is:
 ### Point2d
 Header file: Point.hpp
 
+Purpose: Represent a 2d vertex.
+
 ```cpp
 class Point2d {double x, y;};
 
@@ -31,6 +33,8 @@ p != p2;          // false if x and y are exactly the same.
 ### Point3d
 Header file: Point.hpp
 
+Purpose: Represent a 3d vertex.
+
 ```cpp
 class Point3d {double x, y, z;};
 
@@ -44,8 +48,10 @@ p == p2;            // true if x, y, and z are exactly the same.
 p != p2;            // false if x, y, and z are exactly the same.
 ```
 
-### Line
+### Line2d
 Header file: Line.hpp
+
+Purpose: Represent a 2d line segment.
 
 ```cpp
 class Line2d{
@@ -67,6 +73,8 @@ s != s2;          // false if points in s are equal to the same points in s2
 
 ### Polyline
 Header file: Polyline.hpp
+
+Purpose: Represent 2d vertex chains.
 
 ```cpp
 class Polyline2d{
@@ -91,6 +99,8 @@ L.computeBounds();        // determine minimum and maximum coordinates, and push
 ### Polygon
 Header file: Polygon.hpp
 
+Purpose: Represent a 2d polygon.
+
 ```cpp
 class Polygon2d{
   std::vector<Point2d> v; // vertices; each polygon begins and ends with equivalent vertices
@@ -111,6 +121,8 @@ P.computeBounds();        // determine minimum and maximum coordinates
 
 ### IPt
 Header file: PolyIntersect.hpp
+
+Purpose: Represent the intersection point between two objects, where that intersection can be represented with a vertex and a distance to the next vertex.
 
 ```cpp
 class IPt{
