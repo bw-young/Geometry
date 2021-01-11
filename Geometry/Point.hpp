@@ -18,6 +18,8 @@
 #ifndef YOUNG_GEOMETRY_POINT_20201211
 #define YOUNG_GEOMETRY_POINT_20201211
 
+#include <cmath> // sqrt
+
 
 // Basic 2d point object.
 class Point2d {
@@ -37,12 +39,20 @@ public:
         y = p.y;
         return *this;
     }
+    
     bool operator< ( const Point2d& p ) const
     {
         // sort by y, then x
         if ( y < p.y ) return true;
         if ( y > p.y ) return false;
         return x < p.x;
+    }
+    bool operator> ( const Point2d& p ) const
+    {
+        // sort by y, then x
+        if ( y > p.y ) return true;
+        if ( y < p.y ) return false;
+        return x > p.x;
     }
     bool operator== ( const Point2d& p ) const
     {
@@ -82,8 +92,16 @@ public:
         if ( z > p.z ) return false;
         if ( y < p.y ) return true;
         if ( y > p.y ) return false;
-
         return x < p.x;
+    }
+    bool operator> ( const Point3d& p ) const
+    {
+        // sort by z, then y, then x
+        if ( z > p.z ) return true;
+        if ( z < p.z ) return false;
+        if ( y > p.y ) return true;
+        if ( y < p.y ) return false;
+        return x > p.x;
     }
     bool operator== ( const Point3d& p ) const
     {

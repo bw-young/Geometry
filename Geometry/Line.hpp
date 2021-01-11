@@ -6,7 +6,7 @@
 // -- HISTORY ---------------------------------------------------- //
 // 04/23/2020 - Brennan Young                                      //
 // - created                                                       //
-// - migrated Point2d, Point3d, inPoly, raySegment_intersect2d,    //
+// - migrated Point2d, Point3d, raySegment_intersect2d,            //
 //   and rayPoly_intersect2d from GridObjPolyOps.h.                //
 // 08/21/2020 - Brennan Young                                      //
 // - added distToEdge.                                             //
@@ -36,9 +36,10 @@
 // Basic 2D line object.
 class Line2d {
 public:
-    Point2d a, b, r; // start, end, and direction vector a->b
+    Point2d a, b, r;    // start, end, and direction vector a->b
     double dx, dy, len; // euclidean distance from a to b
     
+    // constructors, destructor
     Line2d ( const Point2d& A=Point2d(),
         const Point2d& B=Point2d() ) : a(A), b(B), dx(B.x-A.x),
         dy(B.y-A.y)
@@ -49,6 +50,8 @@ public:
     Line2d ( const Line2d& L ) : a(L.a), b(L.b), r(L.r), dx(L.dx),
         dy(L.dy), len(L.len) {}
     ~Line2d () {}
+    
+    // operators
     Line2d& operator= ( const Line2d& L )
     {
         if ( &L == this ) return *this;
@@ -87,7 +90,7 @@ public:
 // p0 : line segment end-point.
 // p1 : line segment end-point.
 // -- Returns --
-// The distance from the ray origin to the point of the intesection.
+// The distance from the ray origin to the point of the intersection.
 // This is negative if they do not intersect.
 template <class Point>
 double raySegment_intersect2d ( const Point& r0, const Point& r1,
