@@ -60,7 +60,14 @@ public:
         if ( s.size() < L.s.size() ) return true;
         if ( s.size() > L.s.size() ) return false;
         // then sort by number of vertices
-        return v.size() < L.v.size();
+        if ( v.size() < L.v.size() ) return true;
+        if ( v.size() > L.v.size() ) return false;
+        // then sort by the vertices themselves
+        for ( size_t i = 0; i < v.size(); ++i ) {
+            if ( v[i] < L.v[i] ) return true;
+            if ( v[i] > L.v[i] ) return false;
+        }
+        return false;
     }
     bool operator== ( const Polyline2d& L ) const
     {

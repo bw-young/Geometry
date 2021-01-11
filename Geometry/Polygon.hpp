@@ -54,11 +54,20 @@ public:
     }
     bool operator< ( const Polygon2d& G ) const
     {
+        // sort by bounding box coordinates first
         if ( bMin < G.bMin ) return true;
         if ( bMin > G.bMin ) return false;
         if ( bMax < G.bMax ) return true;
         if ( bMax > G.bMax ) return false;
-        return v.size() < G.v.size();
+        // then sort by number of vertices
+        if ( v.size() < G.v.size() ) return true;
+        if ( v.size() > G.v.size() ) return false;
+        // then sort by vertices
+        for ( size_t i = 0; i < v.size(); ++i ) {
+            if ( v[i] < G.v[i] ) return true;
+            if ( v[i] > G.v[i] ) return false;
+        }
+        return false;
     }
     bool operator== ( const Polygon2d& G ) const
     {
