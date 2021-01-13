@@ -8,12 +8,14 @@
 // - created                                                       //
 // 01/13/2020 - Brennan Young                                      //
 // - added constructor with Polygon2d argument.                    //
+// - added extractChain method.                                    //
+// - added removeChain method.                                     //
 /////////////////////////////////////////////////////////////////////
 
 #ifndef YOUNG_GEOMETRY_POLYLINE_20210111
 #define YOUNG_GEOMETRY_POLYLINE_20210111
 
-#include <vector>   // std::vector, size_t
+#include <vector>      // std::vector, size_t
 #include "Polygon.hpp" // Point2d, Line2d, Polygon2d
 
 
@@ -132,6 +134,55 @@ public:
     }
     
     // basic operations
+    
+    // create a polyline of chain i
+    Polyline2d extractChain ( size_t i ) const
+    {
+        if ( i >= s.size() ) return Polyline2d();
+        
+        size_t jend = (i+1 == s.size() ? v.size() : s[i+1]);
+        
+        Polyline2d out;
+        out.v.reserve(jend - s[i]);
+        
+        for ( size_t j = s[i]; j < jend; ++j )
+            out.v.push_back(v[j]);
+        out.computeBounds();
+        
+        return out;
+    }
+    
+    // delete chain i from polyline
+    void removeChain ( size_t i )
+    {
+        if ( i >= s.size() ) return;
+        
+        size_t jend = (i+1 == s.size() ? v.size() : s[i+1]);
+        
+        std::vector<Point2d> vnew;
+        std::vector<Point2d> snew;
+        vnew.reserve(v.size() - (jend - s[i]));
+        snew.reserve(s.size() - 1);
+        
+        // create new vector of chains to keep
+        for ( size_t I = 0; I < s.size(); ++I ) {
+            if ( I == i ) continue;
+            size_t jend = (I+1 == s.size() ? v.size() : s[I+1]);
+            
+            // add chain
+            snew.push_back(I);
+            for ( size_t j = s[I]; j < jend; ++j )
+                vnew.push_back(v[j]);
+        }
+        
+        // replace old vectors
+        v = vnew;
+        s = snew;
+        computeBounds();
+    }
+    
+    // compute minimum and maximum bounding points; ensure chains
+    // are represented in data structure
     void computeBounds ()
     {
         if ( v.size() > 0 ) {
