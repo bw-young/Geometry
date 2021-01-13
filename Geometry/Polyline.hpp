@@ -6,13 +6,15 @@
 // -- HISTORY ---------------------------------------------------- //
 // 12/29/2020 - Brennan Young                                      //
 // - created                                                       //
+// 01/13/2020 - Brennan Young                                      //
+// - added constructor with Polygon2d argument.                    //
 /////////////////////////////////////////////////////////////////////
 
 #ifndef YOUNG_GEOMETRY_POLYLINE_20210111
 #define YOUNG_GEOMETRY_POLYLINE_20210111
 
 #include <vector>   // std::vector, size_t
-#include "Line.hpp" // Point2d, Line2d
+#include "Polygon.hpp" // Point2d, Line2d, Polygon2d
 
 
 class Polyline2d {
@@ -26,6 +28,26 @@ public:
         const std::vector<Point2d>& V=std::vector<Point2d>() ) : v(V)
     {
         computeBounds();
+    }
+    Polyline2d ( const Polygon2d& G ) : v(G.v), bMin(G.bMin),
+        bMax(G.bMax)
+    {
+        size_t i0, i1=0;
+        
+        // get the beginning of each chain
+        for ( size_t i = 0; i < G.size(); ++i ) {
+            // start of polygon
+            if ( i == i1 ) {
+                i0 = i;
+                s.push_back(i);
+            }
+            
+            // end of polygon
+            else if ( G[i] == G[i0] ) {
+                i1 = i+1;
+                continue;
+            }
+        }
     }
     Polyline2d ( const Polyline2d& L ) : v(L.v), s(L.s),
         bMin(L.bMin), bMax(L.bMax) {}
