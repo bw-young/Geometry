@@ -85,6 +85,7 @@ class Polyline2d{
 }; // Polyline2d
 
 Polyline2d (V);           // construct with a vector of Point2d objects and determine the bounds; default is an empty vector
+Polyline2d (P);           // construct from a Polygon2d object
 Polyline2d (L);           // copy constructor
 L2 = L;                   // assignment copies the object's contents
 L[i];                     // access element i in v, vector of Point2d objects
