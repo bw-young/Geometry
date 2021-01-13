@@ -10,6 +10,23 @@ The simplest way to include these objects and functions is:
 #include "Geometry.hpp"
 ```
 
+## Contents
+| Objects |
+| --- |
+| [Point2d](#point2d) |
+| [Point3d](#point2d) |
+| [Line2d](#line2d) |
+| [Polyline2d](#polyline2d) |
+| [Polygon2d](#polygon2d) |
+| [IPt](#ipt) |
+
+| Operations |
+| --- |
+| [Conversion](#conversion-operations) |
+| [Distance](#distance-operations) |
+| [Topological](#topological-operations) |
+| [Boolean](#boolean-operations) |
+
 ## Objects
 
 ### Point2d
@@ -208,7 +225,7 @@ std::vector<IPt> intersectionPoints2d (Polygon2d A, Polygon2d B);
 std::vector<IPt> intersectionPoints2d (Polygon2d A, Polyline2d B)
 ```
 
-## 2D Boolean Operations
+## Boolean Operations
 ```cpp
 // AND = intersection = clip
 Polygon2d polyAND (Polygon2d A, Polygon2d B);
