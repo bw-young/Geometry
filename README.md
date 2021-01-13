@@ -71,7 +71,7 @@ s == s2;          // true if points in s are equal to the same points in s2
 s != s2;          // false if points in s are equal to the same points in s2
 ```
 
-### Polyline
+### Polyline2d
 Header file: Polyline.hpp
 
 Purpose: Represent 2d vertex chains.
@@ -95,9 +95,11 @@ L != L2;                  // false if chains and vertices are the same
 L.size();                 // get number of vertices
 L.chains();               // get number of chains
 L.computeBounds();        // determine minimum and maximum coordinates, and pushes 0 to L.s if L.s is empty but L.v is not.
+L.extractChain(i);        // get vertex chain v[s[i]] to v[s[i+1]] as its own Polyline2d object
+L.removeChain(i);         // delete vertex chain v[s[i]] to v[s[i+1]]
 ```
 
-### Polygon
+### Polygon2d
 Header file: Polygon.hpp
 
 Purpose: Represent a 2d polygon.
