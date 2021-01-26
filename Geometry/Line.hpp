@@ -25,6 +25,8 @@
 // - added Line2d class.                                           //
 // - added sqDistToLine2d, sqDistToLine, distToLine2d, and         //
 //   distToLine.                                                   //
+// 01/26/2021                                                      //
+// - added angle2d.                                                //
 /////////////////////////////////////////////////////////////////////
 
 #ifndef YOUNG_GEOMETRY_LINE_20201211
@@ -209,6 +211,17 @@ double distToLine ( const Line2d& a, const Line2d& b )
 {
     return distToLine2d(a, b);
 }
+
+// Measure the angle between two lines. Returns a negative value if
+// an angle cannot be determined (i.e., if a or b is 0-length).
+double angle2d ( const Line2d& a, const Line2d& b )
+{
+    double denom = a.len * b.len;
+    if ( denom == 0.0 ) return -1;
+    
+    double num = a.dx * b.dx + a.dy * b.dy;
+    return acos(num / denom);
+};
 
 
 #endif // YOUNG_GEOMETRY_LINE_20201211

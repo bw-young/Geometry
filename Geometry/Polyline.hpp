@@ -231,9 +231,6 @@ public:
     // get number of chains.
     size_t nchains () const { return s.size(); }
     
-    // get starting index of chain i.
-    size_t chain ( size_t i ) const { return s[i].start; }
-    
     // get the chain index for the chain that contains vertex i;
     // if no chain contains vertex i, returns the number of chains.
     size_t findChain ( size_t i ) const
@@ -260,6 +257,9 @@ public:
         
         return j;
     }
+    
+    // get starting index of chain i.
+    size_t chain ( size_t i ) const { return s[i].start; }
     
     // get whether chain i loops or not.
     bool loop ( size_t i ) const { return s[i].loop; }

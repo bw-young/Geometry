@@ -9,6 +9,8 @@
 // - created                                                       //
 // 01/25/2021 - Brennan Young                                      //
 // - default constructor now initializes up to dimension n.        //
+// 01/26/2021 - Brennan Young                                      //
+// - minor optimization in constructors.                           //
 /////////////////////////////////////////////////////////////////////
 
 #ifndef YOUNG_GEOMETRY_EXTENT_20210122
@@ -37,12 +39,8 @@ public:
     {
         a = new double [n];
         b = new double [n];
-        if ( x0 < x1 ) { a[0] = x0;  b[0] = x1; }
-        else           { a[0] = x1;  b[0] = x0; }
-        for ( size_t i = 0; i < n; ++i ) {
-            a[i] -= buff;
-            b[i] += buff;
-        }
+        if ( x0 < x1 ) { a[0] = x0 - buff;  b[0] = x1 + buff; }
+        else           { a[0] = x1 - buff;  b[0] = x0 + buff; }
     }
     
     // 2D constructor
@@ -52,14 +50,10 @@ public:
     {
         a = new double [n];
         b = new double [n];
-        if ( x0 < x1 ) { a[0] = x0;  b[0] = x1; }
-        else           { a[0] = x1;  b[0] = x0; }
-        if ( y0 < y1 ) { a[1] = y0;  b[1] = y1; }
-        else           { a[1] = y1;  b[1] = y0; }
-        for ( size_t i = 0; i < n; ++i ) {
-            a[i] -= buff;
-            b[i] += buff;
-        }
+        if ( x0 < x1 ) { a[0] = x0 - buff;  b[0] = x1 + buff; }
+        else           { a[0] = x1 - buff;  b[0] = x0 + buff; }
+        if ( y0 < y1 ) { a[1] = y0 - buff;  b[1] = y1 + buff; }
+        else           { a[1] = y1 - buff;  b[1] = y0 + buff; }
     }
     
     // 3D constructor
@@ -69,16 +63,12 @@ public:
     {
         a = new double [n];
         b = new double [n];
-        if ( x0 < x1 ) { a[0] = x0;  b[0] = x1; }
-        else           { a[0] = x1;  b[0] = x0; }
-        if ( y0 < y1 ) { a[1] = y0;  b[1] = y1; }
-        else           { a[1] = y1;  b[1] = y0; }
-        if ( z0 < z1 ) { a[2] = z0;  b[2] = z1; }
-        else           { a[2] = z1;  b[2] = z0; }
-        for ( size_t i = 0; i < n; ++i ) {
-            a[i] -= buff;
-            b[i] += buff;
-        }
+        if ( x0 < x1 ) { a[0] = x0 - buff;  b[0] = x1 + buff; }
+        else           { a[0] = x1 - buff;  b[0] = x0 + buff; }
+        if ( y0 < y1 ) { a[1] = y0 - buff;  b[1] = y1 + buff; }
+        else           { a[1] = y1 - buff;  b[1] = y0 + buff; }
+        if ( z0 < z1 ) { a[2] = z0 - buff;  b[2] = z1 + buff; }
+        else           { a[2] = z1 - buff;  b[2] = z0 + buff; }
     }
     
     // copy constructor

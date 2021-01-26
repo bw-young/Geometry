@@ -43,6 +43,9 @@
 // 01/21/2021 - Brennan Young                                      //
 // - corrected error where intersectionPoints2d(Polgon,Polygon)    //
 //   would not detect sub-polygon terminations in polygon B.       //
+// 01/25/2021 - Brennan Young                                      //
+// - made numerous adjustments to mitigate error in intersection(  //
+//   Polygon, Polyline).                                           //
 /////////////////////////////////////////////////////////////////////
 
 #ifndef YOUNG_GEOMETRY_POLYINTERSECT_20201228
@@ -88,7 +91,7 @@ public:
     }
     bool operator< (const IPt& P) const
     {
-        // sort by i, then by a, then by j, then by b
+        // sort in order of i, a, j, b
         if ( i < P.i ) return true;
         if ( i > P.i ) return false;
         if ( a < P.a ) return true;
@@ -184,9 +187,9 @@ std::vector<IPt> intersectionPoints2d ( const Polygon2d& A,
             }
             
             // skip if no overlap with the other line segment
-            if ( !Lext.overlap(Extent(B[j].x, B[j].y,
-                    B[j+1].x, B[j+1].y, 1.0)) )
-                continue;
+            //if ( !Lext.overlap(Extent(B[j].x, B[j].y,
+            //        B[j+1].x, B[j+1].y, 1.0)) )
+            //    continue;
             
             // get line object to represent segment j -> j+1
             Lj = Line2d (B[j], B[j+1]);
@@ -287,9 +290,9 @@ std::vector<IPt> intersectionPoints2d ( const Polygon2d& A,
             }
             
             // skip if no overlap with the other line segment
-            if ( !Lext.overlap(Extent(B[j].x, B[j].y,
-                    B[j+1].x, B[j+1].y, 1.0)) )
-                continue;
+            //if ( !Lext.overlap(Extent(B[j].x, B[j].y,
+            //        B[j+1].x, B[j+1].y, 1.0)) )
+            //    continue;
             
             // get line object to represent segment j -> j+1
             Lj = Line2d (B[j], B[j+1]);
@@ -573,28 +576,19 @@ Polyline2d intersect ( const Polygon2d& poly,
                 && i-1 == intersections[k-1].i
                 && fabs(intersections[k-1].a - 1) < 0.0000001) ) {
             chain.push_back(line[i]);
-            //std::cout << ">>> (" << chain.back().x
-            //          << " " << chain.back().y << ") "
-            //          << k << "/" << intersections.size() << "\n";
             
-            // check for closing input loop
-            //std::cout << (int)line.loop(I-1)
-            //          << " " << I << " " << line.nchains()
-            //          << " " << i << " " << line.size()
-            //          << " <<<<<<<<<<<<<<<<<<<<"
-            //          << "\n";
+            // check for end of chain
             if ( I-1 < line.nchains() && line.loop(I-1)
                     && ((I < line.nchains() && i+1 == line.chain(I))
                     || (I == line.nchains() && i+1 == line.size())) )
             {
                 // check if entire loop is inside polygon
-                if ( m == out.nchains() )
-                    out.addChain(out.nchains(), chain, true);
-                else {
-                    if ( chain.back() == out[out.chain(m)] )
-                        chain.pop_back();
+                if ( m < out.nchains()
+                        && chain.back() == out[out.chain(m)] ) {
+                    chain.pop_back();
                     out.append_front(m, chain, false);
                 }
+                else out.addChain(out.nchains(), chain, true);
                 
                 // reset chain
                 chain.clear();
@@ -606,6 +600,17 @@ Polyline2d intersect ( const Polygon2d& poly,
         // add intersection points
         for ( ; k < intersections.size() && i == intersections[k].i;
                 ++k ) {
+            // check if need to change state
+            //Line2d LL (poly[intersections[k].j],
+            //           poly[intersections[k].j+1]);
+            //Line2d LP (line[intersections[k].i],
+            //           line[intersections[k].i+1]);
+            //double angle = angle2d(LL, LP);
+            //if ( fabs(angle) < 0.0000001
+            //        && ((!state && segment-after-intersection-exits-poly)
+            //        || (state && segement-after-intersection-enters-poly)) )
+            //    continue;
+            
             state = !state;
             
             // entering polygon
@@ -628,7 +633,6 @@ Polyline2d intersect ( const Polygon2d& poly,
             }
             
             chain.push_back(IPt2Point2d(intersections[k], line));
-            //std::cout << "~~~ (" << chain.back().x << " " << chain.back().y << ")\n";
         }
     }
     
