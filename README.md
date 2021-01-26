@@ -5,6 +5,7 @@ This is an ongoing work in progress and is liable to change at any time without 
 
 Likewise, this documentation will expand and become more complex as needed.
 
+## Installation
 The simplest way to include these objects and functions is:
 ```cpp
 #include "Geometry.hpp"
