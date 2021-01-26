@@ -40,6 +40,9 @@
 //   comparison.                                                   //
 // - corrected error in intersectionsPoints2d that resulted in an  //
 //   incorrect comparison of distances.                            //
+// 01/21/2021 - Brennan Young                                      //
+// - corrected error where intersectionPoints2d(Polgon,Polygon)    //
+//   would not detect sub-polygon terminations in polygon B.       //
 /////////////////////////////////////////////////////////////////////
 
 #ifndef YOUNG_GEOMETRY_POLYINTERSECT_20201228
@@ -145,8 +148,10 @@ std::vector<IPt> intersectionPoints2d ( const Polygon2d& A,
     
     size_t m, j, i0=0, i1=0, j0=0, j1=0;
     Line2d Li, Lj;
+    Extent Lext;
     bool dd=false, d0=false, R=false, R0=false, Rp=false;
     double di, dj, dot;
+    
     for ( size_t i = 0; i+1 < A.size(); ++i ) {
         // start of polygon
         if ( i == i1 ) {
@@ -162,16 +167,26 @@ std::vector<IPt> intersectionPoints2d ( const Polygon2d& A,
         
         // get line object to represent segment i -> i+1
         Li = Line2d (A[i], A[i+1]);
+        Lext = Extent(Li.a.x, Li.a.y, Li.b.x, Li.b.y, 1.0);
         
+        // skip if no overlap with the other object
+        if ( !Lext.overlap(B.ext) ) continue;
+        
+        j0 = j1 = 0;
         for ( j = 0; j+1 < B.size(); ++j ) {
             // start of polygon
-            if ( j == j1 ) j0 = j1;
+            if ( j == j1 ) j0 = j;
             
             // end of polygon
             else if ( B[j] == B[j0] ) {
                 j1 = j+1; // start of next polygon
                 continue;
             }
+            
+            // skip if no overlap with the other line segment
+            if ( !Lext.overlap(Extent(B[j].x, B[j].y,
+                    B[j+1].x, B[j+1].y, 1.0)) )
+                continue;
             
             // get line object to represent segment j -> j+1
             Lj = Line2d (B[j], B[j+1]);
@@ -201,12 +216,17 @@ std::vector<IPt> intersectionPoints2d ( const Polygon2d& A,
             // (that is, both exits and enters the polygon)
             if ( !((d0 && R0 == R) || (dd && Rp == R)) ) {
                 dj = raySegment_intersect2d(Lj.a, Lj.r, Li.a, Li.b);
-                intersections.push_back(
-                    IPt(i, di, j, dj/Lj.len));
+                intersections.push_back(IPt(i, di, j, dj/Lj.len));
                 if ( i == i0 ) {
                     m = intersections.size() - 1;
                     R0 = R;
                 }
+                
+                IPt tmp = intersections.back();
+                tmp.i = tmp.j;
+                tmp.a = tmp.b;
+                Point2d PA = IPt2Point2d(intersections.back(), A);
+                Point2d PB = IPt2Point2d(tmp, B);
             }
             
             Rp = R;
@@ -232,10 +252,13 @@ std::vector<IPt> intersectionPoints2d ( const Polygon2d& A,
     std::vector<IPt> intersections;
     intersections.reserve(A.size());
     
-    size_t m, j, i0=0, i1=0, J=1;
+    size_t m=-1, j, i0=0, i1=0, J=1;
     Line2d Li, Lj;
+    Extent Lext;
     bool dd=false, d0=false, R=false, R0=false, Rp=false;
     double di, dj, dot;
+    Point2d P (A.ext.xmin()-1, A.ext.ymin()-1);
+    Point2d P0 (P) , Pp (P);
     for ( size_t i = 0; i+1 < A.size(); ++i ) {
         // start of polygon
         if ( i == i1 ) {
@@ -251,13 +274,22 @@ std::vector<IPt> intersectionPoints2d ( const Polygon2d& A,
         
         // get line object to represent segment i -> i+1
         Li = Line2d (A[i], A[i+1]);
+        Lext = Extent(Li.a.x, Li.a.y, Li.b.x, Li.b.y, 1.0);
+        
+        // skip if no overlap with the other object
+        if ( !Lext.overlap(B.extent()) ) continue;
         
         for ( j = 0; j+1 < B.size(); ++j ) {
             // end of chain
-            if ( J < B.s.size() && j+1 == B.s[J] ) {
+            if ( J < B.nchains() && j+1 == B.chain(J) ) {
                 ++J;
                 continue;
             }
+            
+            // skip if no overlap with the other line segment
+            if ( !Lext.overlap(Extent(B[j].x, B[j].y,
+                    B[j+1].x, B[j+1].y, 1.0)) )
+                continue;
             
             // get line object to represent segment j -> j+1
             Lj = Line2d (B[j], B[j+1]);
@@ -269,23 +301,43 @@ std::vector<IPt> intersectionPoints2d ( const Polygon2d& A,
             if ( di < 0 || di > Li.len ) continue;
             di = di / Li.len;
             
+            P = Point2d (Li.a.x + di * Li.len * Li.r.x,
+                         Li.a.y + di * Li.len * Li.r.y);
+            //std::cout << std::fixed << std::setprecision(0);
+            //std::cout << "i=" << i << "/" << A.size()
+            //          << " t=" << (di*100)
+                      //<< " xy_i=(" << Li.a.x << " " << Li.a.y << ")"
+            //          << " j=" << j << "/" << B.size()
+                      //<< " xy_j=(" << Lj.a.x << " " << Lj.a.y << ")"
+            //          << " P=(" << P.x << " " << P.y << ")"
+            //          ;
+            
             // determine if same as first or previous intersection
             d0 = A[i+1] == A[i0]
                 && m < intersections.size()
-                && fabs(intersections[m].a - di) < 0.0000001;
+                && P == P0; //fabs(intersections[m].a - di) < 0.0000001;
             dd = intersections.size() > 0
-                && fabs(intersections.back().a - di) < 0.0000001;
+                && P == Pp; // fabs(intersections.back().a - di) < 0.0000001;
             
-            // get dot product of right-orthogonal vector (+ = clockwise)
-            dot = Li.r.x * (-Li.dy) + Li.r.y * Li.dx;
+            // get dot product with right-orthogonal vector (+ = clockwise)
+            dot = Lj.r.x * (-Li.dy) + Lj.r.y * Li.dx;
             R = dot > 0.0;
             
-            if ( i == i0 ) R0 = Rp = R;
+            if ( i == i0 ) {
+                R0 = Rp = R;
+                P0 = Pp = P;
+            }
             
             // record intersection only if not duplicating a vertex
             // unless ray touches but doesn't cross polygon boundary
             // (that is, both exits and enters the polygon)
             if ( !((d0 && R0 == R) || (dd && Rp == R)) ) {
+                //std::cout << " ++ " << int(d0)
+                //             << " " << int(R0)
+                //             << " " << int(dd)
+                //             << " " << int(Rp)
+                //             << " " << int(R)
+                //             << " " << (dot*100);
                 dj = raySegment_intersect2d(Lj.a, Lj.r, Li.a, Li.b);
                 intersections.push_back(
                     IPt(i, di, j, dj/Lj.len));
@@ -295,7 +347,10 @@ std::vector<IPt> intersectionPoints2d ( const Polygon2d& A,
                 }
             }
             
+            //std::cout << "\n";
+            
             Rp = R;
+            Pp = P;
         }
     }
     
@@ -493,45 +548,93 @@ Polyline2d intersect ( const Polygon2d& poly,
     // polygon
     int w = inPoly(poly, line[0]);
     bool state = w > 0 && w % 2 != 0; // true if in polygon
-    bool newChain = true;
     
     // build list of vertices
     Polyline2d out;
-    out.v.reserve(line.size() + poly.size());
-    out.s.reserve(line.s.size() + intersections.size());
+    std::vector<Point2d> chain;
+    chain.reserve(line.size() + intersections.size());
     
     size_t I = 0; // polyline chain
-    size_t k = 0;
+    size_t m = 0; // first output chain in input chain (for loops)
+    size_t k = 0; // intersection
     for ( size_t i = 0; i < line.size(); ++i ) {
-        if ( I < line.s.size() && i == line.s[I] ) {
-            newChain = true;
+        // new chain
+        if ( I < line.nchains() && i == line.chain(I) ) {
             ++I;
+            m = out.nchains();
         }
         
-        // add if vertex is NOT an intersection point
-        if ( state &&
-                !(k < intersections.size() && i == intersections[k].i
-                && intersections[k].a < 0.0000001) )
-        {
-            out.v.push_back(line[i]);
-            if ( newChain ) out.s.push_back(out.v.size()-1);
-            newChain = false;
+        // add vertex if inside polygon and NOT an intersection point
+        if ( state
+                && !(k < intersections.size()
+                && i == intersections[k].i
+                && intersections[k].a < 0.0000001)
+                && !(k-1 < intersections.size()
+                && i-1 == intersections[k-1].i
+                && fabs(intersections[k-1].a - 1) < 0.0000001) ) {
+            chain.push_back(line[i]);
+            //std::cout << ">>> (" << chain.back().x
+            //          << " " << chain.back().y << ") "
+            //          << k << "/" << intersections.size() << "\n";
+            
+            // check for closing input loop
+            //std::cout << (int)line.loop(I-1)
+            //          << " " << I << " " << line.nchains()
+            //          << " " << i << " " << line.size()
+            //          << " <<<<<<<<<<<<<<<<<<<<"
+            //          << "\n";
+            if ( I-1 < line.nchains() && line.loop(I-1)
+                    && ((I < line.nchains() && i+1 == line.chain(I))
+                    || (I == line.nchains() && i+1 == line.size())) )
+            {
+                // check if entire loop is inside polygon
+                if ( m == out.nchains() )
+                    out.addChain(out.nchains(), chain, true);
+                else {
+                    if ( chain.back() == out[out.chain(m)] )
+                        chain.pop_back();
+                    out.append_front(m, chain, false);
+                }
+                
+                // reset chain
+                chain.clear();
+                chain.reserve(
+                    line.size() - i + intersections.size() - k);
+            }
         }
         
         // add intersection points
         for ( ; k < intersections.size() && i == intersections[k].i;
-                ++k )
-        {
+                ++k ) {
             state = !state;
-            if ( state ) newChain = true;
-            out.v.push_back(IPt2Point2d(intersections[k], line));
-            if ( newChain ) out.s.push_back(out.v.size()-1);
-            newChain = false;
+            
+            // entering polygon
+            if ( state && chain.size() > 0 ) {
+                // add currently collected chain to output
+                // (if closing an input loop, attach to the chain in
+                // output that represents the start of the looping
+                // input chain)
+                if ( I-1 < line.nchains() && line.loop(I-1)
+                        && m < out.nchains()
+                        && out[out.chain(m)] == line[line.chain(I-1)]
+                        && out[out.chain(m)] == line[i] )
+                    out.append_front(m, chain, false);
+                else out.addChain(out.nchains(), chain, false);
+                
+                // reset chain
+                chain.clear();
+                chain.reserve(
+                    line.size() - i + intersections.size() - k);
+            }
+            
+            chain.push_back(IPt2Point2d(intersections[k], line));
+            //std::cout << "~~~ (" << chain.back().x << " " << chain.back().y << ")\n";
         }
     }
     
-    out.v.shrink_to_fit();
-    out.s.shrink_to_fit();
+    if ( chain.size() > 0 )
+        out.addChain(out.nchains(), chain, false);
+    
     return out;
 }
 

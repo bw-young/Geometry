@@ -10,38 +10,44 @@
 // 01/07/2020 - Brennan Young                                      //
 // - migrated segmentPoly_intersect2d from ObjectPolyOps.h.        //
 // - migrated sqDistToEdge and distToEdge from ObjectPolyOps.h.    //
+// 01/22/2021 - Brennan Young                                      //
+// - replaced Point2d bMin and bMax objects with Extent ext.       //
 /////////////////////////////////////////////////////////////////////
 
 #ifndef YOUNG_GEOMETRY_POLYGON_20201229
 #define YOUNG_GEOMETRY_POLYGON_20201229
 
-#include <vector>   // std::vector
-#include "Line.hpp" // Point2d, Line2d
+#include <vector>             // std::vector
+#include "Extent.hpp"         // Extent
+#include "Line.hpp"           // Point2d, Line2d
 #include "../BYstdlib/sort.h" // quickSort
 
 
 class Polygon2d {
 public:
     std::vector<Point2d> v; // vertices
-    Point2d bMin, bMax;     // bounds
+    Extent ext;             // bounds
     
-    // constructors, destructor
+    // constructor
     Polygon2d (
-        const std::vector<Point2d>& V=std::vector<Point2d>() ) : v(V)
+        const std::vector<Point2d>& V=std::vector<Point2d>() )
+    : v(V), ext(Extent(2))
     {
         computeBounds();
     }
-    Polygon2d ( const Polygon2d& G ) : v(G.v), bMin(G.bMin),
-        bMax(G.bMax) {}
+    
+    // copy constructor
+    Polygon2d ( const Polygon2d& G ) : v(G.v), ext(G.ext) {}
+    
+    // destructor
     ~Polygon2d () {}
     
     // operators
     Polygon2d& operator= ( const Polygon2d& G )
     {
         if ( &G == this ) return *this;
-        v = G.v;
-        bMin = G.bMin;
-        bMax = G.bMax;
+        v    = G.v;
+        ext  = G.ext;
         return *this;
     }
     Point2d& operator[] ( size_t i )
@@ -54,14 +60,14 @@ public:
     }
     bool operator< ( const Polygon2d& G ) const
     {
-        // sort by bounding box coordinates first
-        if ( bMin < G.bMin ) return true;
-        if ( bMin > G.bMin ) return false;
-        if ( bMax < G.bMax ) return true;
-        if ( bMax > G.bMax ) return false;
+        // sort by bounding box first
+        if ( ext < G.ext ) return true;
+        if ( ext > G.ext ) return false;
+        
         // then sort by number of vertices
         if ( v.size() < G.v.size() ) return true;
         if ( v.size() > G.v.size() ) return false;
+        
         // then sort by vertices
         for ( size_t i = 0; i < v.size(); ++i ) {
             if ( v[i] < G.v[i] ) return true;
@@ -94,15 +100,11 @@ public:
     void computeBounds ()
     {
         if ( v.size() > 0 ) {
-            bMin = bMax = v[0];
-            for ( size_t i = 1; i < v.size(); ++i ) {
-                if ( v[i].x < bMin.x ) bMin.x = v[i].x;
-                else if ( v[i].x > bMax.x ) bMax.x = v[i].x;
-                if ( v[i].y < bMin.y ) bMin.y = v[i].y;
-                else if ( v[i].y > bMax.y ) bMax.y = v[i].y;
-            }
+            ext = Extent(v[0].x, v[0].y, v[0].x, v[0].y);
+            for ( size_t i = 1; i < v.size(); ++i )
+                ext.add(Extent(v[i].x, v[i].y, v[i].x, v[i].y));
         }
-        else bMin = bMax = Point2d();
+        else ext = Extent(2);
     }
 }; // Polygon
 
