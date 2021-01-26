@@ -43,10 +43,11 @@ class Extent {
   double *b;                     // maximum bounds
 };
 
-Extent e (N);                    // initialize to N dimensions, minimum N=1; default=1
+Extent e (N);                    // initialize to N dimensions, minimum N=1; default N=1
 Extent e (x0,x1,b);              // initialize to 1-dimensional extent from min(x0,x1)-b to max(x0,x1)+b; default b=0
 Extent e (x0,y0,x1,y1,b);        // initialize to 2-dimensonal extent; default b=0
 Extent e (x0,y0,z0,x1,y1,z1,b);  // initialize to 3-dimensional extent; default b=0
+Extent e (e2);                   // copy constructor
 
 e2 = e;                          // assignment copies the object's contents
 e < e2;                          // checks dimensions, then minimum bound, then maximum bound
