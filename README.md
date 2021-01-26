@@ -220,7 +220,7 @@ template <class PointArray> Point2d IPt2Point2d (IPt ipt, PointArray A);
 std::vector<IPt> reverseForB (std::vector<IPt> ipt);
 ```
 
-## Distance Operations
+## Scale Operations
 ```cpp
 // square euclidean distance between points a and b
 template <class Point> double sqDist2d (Point a, Point b);
@@ -260,6 +260,9 @@ double sqDistToEdge2d (Polygon2d P, Line2d s);
 
 // minimum euclidean distance between the given line segment and the nearest edge of the polygon
 double distToEdge2d (Polygon2d P, Line2d s);
+
+// angle between lines ab and cd, treated as vectors
+double angle2d (Line2d ab, Line2d cd);
 ```
 
 ## Topological Operations
