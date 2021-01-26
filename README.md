@@ -13,6 +13,7 @@ The simplest way to include these objects and functions is:
 ## Contents
 | Objects |
 | --- |
+| [Extent](#extent) |
 | [Point2d](#point2d) |
 | [Point3d](#point2d) |
 | [Line2d](#line2d) |
@@ -28,6 +29,48 @@ The simplest way to include these objects and functions is:
 | [Boolean](#boolean-operations) |
 
 ## Objects
+
+### Extent
+Header file: Extent.hpp
+
+Purpose: Represent the bounding box of an n-dimensional (hyper-)volume.
+
+```cpp
+class Extent {
+  size_t n;                      // number of dimensions
+  double *a;                     // minimum bounds
+  double *b;                     // maximum bounds
+};
+
+Extent e (N);                    // initialize to N dimensions, minimum N=1; default=1
+Extent e (x0,x1,b);              // initialize to 1-dimensional extent from x0-b to x1+b; default b=0
+Extent e (x0,y0,x1,y1,b);        // initialize to 2-dimensonal extent; default b=0
+Extent e (x0,y0,z0,x1,y1,z1,b);  // initialize to 3-dimensional extent; default b=0
+
+e2 = e;                          // assignment copies the object's contents
+e < e2;                          // checks dimensions, then minimum bound, then maximum bound
+e > e2;                          // checks dimensions, then minimum bound, then maximum bound
+e == e2;                         // true if number of dimensions and all values are exactly the same
+e != e2;                         // false if number of dimensions and all values are exactly the same
+
+e.size();                        // get number of dimensions
+e.min(i); e.max(i);              // access minimum/maximum bound in dimension i
+e.xmin(); e.xmax();              // access minimum/maximum bound in dimension 0
+e.ymin(); e.ymax();              // access minimum/maximum bound in dimension 1
+e.zmin(); e.zmax();              // access minimum/maximum bound in dimension 2
+e.len(i);                        // get the length of dimension i: b[i] - a[i]
+e.xlen();                        // get the length of dimension 0: b[0] - a[0]
+e.ylen();                        // get the length of dimension 1: b[1] - a[1]
+e.zlen();                        // get the length of dimension 2: b[2] - a[2]
+e.volume();                      // get the (hyper-)volume of the bounding box
+
+e.add(e2); e3 = e.add(e2);       // enlarge the bounding box to include another bounding box
+e.clip(e2);                      // reduce to the volume occupied by both extents
+e3 = e.intersect(e2);            // get the overlap extent
+e + e2; e += e2;                 // enlarge the bounding box to include another bounding box
+e3 = e - e2; e -= e2;            // get the overlap extent
+e.overlap(e2);                   // true if extents overlap (checks for intersection volume > 0)
+```
 
 ### Point2d
 Header file: Point.hpp
@@ -95,25 +138,36 @@ Purpose: Represent 2d vertex chains.
 
 ```cpp
 class Polyline2d{
+  struct Chain {size_t start, bool loop}; // chain break structure
   std::vector<Point2d> v; // vertices
-  std::vector<size_t> s;  // indexes in v that start a new chain
-  Point2d bMin;           // minimum bounding coordinates
-  Point2d bMax;           // maximum bounding coordinates
+  std::vector<Chain> s;   // chain breaks
+  Extent ext;             // minimum bounding box
 }; // Polyline2d
 
-Polyline2d (V);           // construct with a vector of Point2d objects and determine the bounds; default is an empty vector
+Polyline2d (V,c);         // construct with a vector of Point2d objects that is looping if c=true, and determine the bounds; default is an empty vector
 Polyline2d (P);           // construct from a Polygon2d object
 Polyline2d (L);           // copy constructor
 L2 = L;                   // assignment copies the object's contents
 L[i];                     // access element i in v, vector of Point2d objects
-L < L2;                   // checks bounding coordinates, then number of chains, then number of vertices, then each vertex
+L < L2;                   // checks extent, then number of chains, then number of vertices, then each vertex
 L == L2;                  // true if chains and vertices are the same
 L != L2;                  // false if chains and vertices are the same
+L + L2; L += L2;          // append polyline
 L.size();                 // get number of vertices
-L.chains();               // get number of chains
+L.nchains();              // get number of chains
+L.chain(i);               // get the index for the first vertex in chain i
+L.loop(i);                // true if chain i loops
+L.extent();               // get ext
+
+L.findChain(j);           // get the index for the chain that contains vertex j
+L.addChainBreak(j,c);     // add a chain break at vertex j that loops if c=true; if a chain already begins at j, updates instead
+L.removeChainBreak(i);    // remove chain break i; if either side of the break is looping, the new chain will only be looping if the last and first vertices are the same
+L.addChain(i,L,c);        // adds a chain in the ith chain position from a vector of Point2d objects that is looping if c=true
+L.extractChain(i);        // get a Polyline2d objects representing chain i
+L.removeChain(i);         // remove the chain break and all vertices associated with chain i
+L.append_front(i,L,c);    // append the vector of Point2d objects, which loops if c=true, to the beginning of chain i
+L.append_back(i,L,c);     // append the vector of Point2d objects, which loops if c=true, to the end of chain i
 L.computeBounds();        // determine minimum and maximum coordinates, and pushes 0 to L.s if L.s is empty but L.v is not.
-L.extractChain(i);        // get vertex chain v[s[i]] to v[s[i+1]] as its own Polyline2d object
-L.removeChain(i);         // delete vertex chain v[s[i]] to v[s[i+1]]
 ```
 
 ### Polygon2d
@@ -124,8 +178,7 @@ Purpose: Represent a 2d polygon.
 ```cpp
 class Polygon2d{
   std::vector<Point2d> v; // vertices; each polygon begins and ends with equivalent vertices
-  Point2d bMin;           // minimum bounding coordinates
-  Point2d bMax;           // maximum bounding coordinates
+  Extent ext;             // minimum bounding box
 }; // Polygon2d
 
 Polygon2d (V);            // construct with a vector of Point2d objects; default is an empty vector
@@ -136,7 +189,7 @@ P < P2;                   // checks bounding coordinates, then number of vertice
 P == P2;                  // true if vertices are the same
 P != P2;                  // false if vertices are the same
 P.size();                 // get number of vertices
-P.computeBounds();        // determine minimum and maximum coordinates
+P.computeBounds();        // determine ext
 ```
 
 ### IPt
