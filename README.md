@@ -144,9 +144,9 @@ class Polyline2d{
   Extent ext;             // minimum bounding box
 }; // Polyline2d
 
-Polyline2d (V,c);         // construct with a vector of Point2d objects that is looping if c=true, and determine the bounds; default is an empty vector
-Polyline2d (P);           // construct from a Polygon2d object
-Polyline2d (L);           // copy constructor
+Polyline2d L (V,c);       // construct with a vector of Point2d objects that is looping if c=true, and determine the bounds; default is an empty vector
+Polyline2d L (P);         // construct from a Polygon2d object
+Polyline2d L (L);         // copy constructor
 L2 = L;                   // assignment copies the object's contents
 L[i];                     // access element i in v, vector of Point2d objects
 L < L2;                   // checks extent, then number of chains, then number of vertices, then each vertex
