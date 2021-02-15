@@ -142,5 +142,4 @@ double dist ( const Point2d& a, const Point2d& b )
     return dist2d(a, b);
 }
 
-
 #endif // YOUNG_GEOMETRY_POINT_20201211

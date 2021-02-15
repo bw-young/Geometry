@@ -5,6 +5,6 @@
 #include "Line.hpp"
 #include "Polyline.hpp"
 #include "Polygon.hpp"
-#include "PolyIntersect.hpp"
+#include "IntersectOps.hpp"
 
 #endif // YOUNG_GEOMETRY
