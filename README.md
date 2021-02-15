@@ -11,6 +11,8 @@ The simplest way to include these objects and functions is:
 #include "Geometry.hpp"
 ```
 
+A proper DLL or SDK is low-priority for now, but may come in future updates.
+
 ## Contents
 | Objects |
 | --- |
@@ -25,7 +27,7 @@ The simplest way to include these objects and functions is:
 | Operations |
 | --- |
 | [Conversion](#conversion-operations) |
-| [Distance](#distance-operations) |
+| [Distance](#scale-operations) |
 | [Topological](#topological-operations) |
 | [Boolean](#boolean-operations) |
 
@@ -157,18 +159,24 @@ L != L2;                  // false if chains and vertices are the same
 L + L2; L += L2;          // append polyline
 L.size();                 // get number of vertices
 L.nchains();              // get number of chains
+L.findChain(j);           // get the index for the chain that contains vertex j
 L.chain(i);               // get the index for the first vertex in chain i
+L.chainEnd(i);            // get 1 + the index of the last vertex in chain i
 L.loop(i);                // true if chain i loops
 L.extent();               // get ext
+L.vertices();             // access the vertex vector
 
-L.findChain(j);           // get the index for the chain that contains vertex j
 L.addChainBreak(j,c);     // add a chain break at vertex j that loops if c=true; if a chain already begins at j, updates instead
 L.removeChainBreak(i);    // remove chain break i; if either side of the break is looping, the new chain will only be looping if the last and first vertices are the same
 L.addChain(i,L,c);        // adds a chain in the ith chain position from a vector of Point2d objects that is looping if c=true
-L.extractChain(i);        // get a Polyline2d objects representing chain i
+L.extractChain(i);        // get a Polyline2d object representing chain i
 L.removeChain(i);         // remove the chain break and all vertices associated with chain i
 L.append_front(i,L,c);    // append the vector of Point2d objects, which loops if c=true, to the beginning of chain i
 L.append_back(i,L,c);     // append the vector of Point2d objects, which loops if c=true, to the end of chain i
+L.insert(j,p);            // insert point p before vertex j
+L.insert(j,beg,end);      // insert point objects as vertices before vertex j, from iterator beg to but not including iterator end
+L.push_back(p);           // append point p as a vertex to the end of the vertex chain
+L.erase(j);               // delete vertex j
 L.computeBounds();        // determine minimum and maximum coordinates, and pushes 0 to L.s if L.s is empty but L.v is not.
 ```
 
@@ -180,17 +188,33 @@ Purpose: Represent a 2d polygon.
 ```cpp
 class Polygon2d{
   std::vector<Point2d> v; // vertices; each polygon begins and ends with equivalent vertices
+  std::vector<size_t> s;  // beginning of polygons (vertex chains)
   Extent ext;             // minimum bounding box
 }; // Polygon2d
 
 Polygon2d (V);            // construct with a vector of Point2d objects; default is an empty vector
 Polygon2d (P);            // copy constructor
 P2 = P;                   // assignment copies the object's contents
-P[i];                     // access element i in v, vector of Point2d objects
+P[i];                     // access element i in v
 P < P2;                   // checks bounding coordinates, then number of vertices, then each vertex
 P == P2;                  // true if vertices are the same
 P != P2;                  // false if vertices are the same
 P.size();                 // get number of vertices
+P.nchains();              // number of polygons (vertex chains)
+P.findChain(j);           // get the index for the chain that contains vertex j
+L.chain(i);               // get the index for the first vertex in chain i
+L.chainEnd(i);            // get 1 + the index of the last vertex in chain i
+L.loop(i);                // true if chain i loops (always true for polygons)
+L.extent();               // get ext
+L.vertices();             // access the vertex vector
+
+L.addChain(i,L);          // adds a chain in the ith chain position from a vector of Point2d objects
+L.extractChain(i);        // get a Polygon2d object representing chain i
+L.removeChain(i);         // remove the chain and all vertices associated with chain i
+L.insert(j,p);            // insert point p before vertex j
+L.insert(j,beg,end);      // insert point objects as vertices before vertex j, from iterator beg to but not including iterator end
+L.push_back(p);           // append point p as a vertex to the end of the vertex chain; if the last vertex is the same as the one beginning the chain, creates a new chain beginning with this vertex
+L.erase(j);               // delete vertex j
 P.computeBounds();        // determine ext
 ```
 
@@ -201,25 +225,52 @@ Purpose: Represent the intersection point between two objects, where that inters
 
 ```cpp
 class IPt{
-  size_t i;   // vertex index in polygon A
-  double a;   // fraction of distance from i to i+1
-  size_t j;   // vertex index in polygon B
-  double b;   // fraction of distance from j to j+1
+  static const char UNSET, UNKNOWN, ENTER, EXIT, EDGE; // public state constants
+  
+  size_t i;     // vertex index in polygon A
+  double a;     // fraction of distance from i to i+1
+  size_t j;     // vertex index in polygon B
+  double b;     // fraction of distance from j to j+1
+  char state;   // indicator of what the point represents
 }; // IPt
 
-IPt(I,A,J,B); // construct an intersection point with vertex-distance pairs (I,A) and (J,B)
+IPt::UNSET;     // get state constant
+IPt::UNKNOWN;   // get state constant
+IPt::ENTER;     // get state constant
+IPt::EXIT;      // get state constant
+IPt::EDGE;      // get state constant
+IPt(I,A,J,B,S); // construct an intersection point with vertex-distance pairs (I,A) and (J,B) with state S, default=IPt(0,0,0,0,IPt::UNSET)
 IPt(ipt);     // copy constructor
 ipt2 = ipt;   // assignment copies the object's contents
 ipt < ipt2;   // checks i, a, j, then b
+
+// Return true if two intersection point objects are spatially coincident and within the same chain; chain extents are [i0,i1) (looping if iL=true) for i vertices, and [j0,j1) for j vertices (looping if jL=true)
+bool isCoincident (IPt a, IPt b, size_t i0, size_t i1, bool iL, size_t j0, size_t j1, bool jL);
+
+// Returns 1 if line (ipt.i,ipt.i+1) in A points to the right of (ipt.j) in B, -1 if left, or 0 if neither; "right" is any approach direction toward the space CW of both segments if interescting B at a vertex where the segments on either side of the vertex turns right; vice-versa for left
+template <class PolyA, class PolyB> // PolyA and PolyB are either polyline or polygon objects
+int jointRight (IPt ipt, PolyA A, Poly B);
+
+// Return 0 if two intersection points are not the same, 1 if they are the same and one can be discarded, and 2 if they are the same and neither is necessary for characterizing entry/exit into a polygon; determine if intersection points ipt and ipt2 represent exactly the same intersection of A (contains i vertices) and B (contains j vertices); the points aren't the same if spatially coincident but one is entering and the other is exiting
+template <class Poly> // Poly is either a polyline of polygon object
+int isSame (ipt, ipt2, Poly A, Polygon2d B)
 ```
 
 ## Conversion Operations
 ```cpp
-// convert from IPt to Point2d; PointArray could be a std::vector<Point2d>, Polyline2d, or Polygon2d object, or any other object that has Point2d objects accessible with the brackets [] operator.
-template <class PointArray> Point2d IPt2Point2d (IPt ipt, PointArray A);
+// swap (i,a) and (j,b)
+IPt reverseIPt (IPt ipt);
 
 // swap (i,a) and (j,b) and reorder
-std::vector<IPt> reverseForB (std::vector<IPt> ipt);
+std::vector<IPt> reverseIPt (std::vector<IPt> ipt);
+
+// convert from IPt to Point2d
+template <class PointArray> // should be either a polyline or polygon object, or any other container of Point2d objects accessible with the brackets [] operator
+Point2d IPt2Point2d (IPt ipt, PointArray A);
+
+// get the previous and next line segments (L0 and L1) from an intersection point (i,a) involving vertex i in A confined within vertex chain [i0,i1); returns 0 if successful, 1 if not (i.e., crossing the end of a non-looping vertex chain)
+template<Poly> // Poly should be either a polyline or a polygon object
+int segmentsBeforeAfter (size_t i, double a, Poly A, size_t i0, size_t i1, bool loop, Line2d* L0, Line2d* L1)
 ```
 
 ## Scale Operations
@@ -251,6 +302,14 @@ double sqDistToLine (Line2d ab, Line2d cd);
 template <class Line> double distToLine2d (Line ab, Line cd);
 double distToLine (Line2d ab, Line2d cd);
 
+// maximum square euclidean distance between lines ab and cd
+template <class Line> double sqMaxDistToLine2d (Line ab, Line cd);
+double sqMaxDistToLine (Line2d ab, Line2d cd);
+
+// maximum euclidean distance between lines ab and cd
+template <class Line> double maxDistToLine2d (Line ab, Line cd);
+double maxDistToLine(Line2d ab, Line2d cd);
+
 // minimum square euclidean distance between the given point and the nearest edge of the polygon
 double sqDistToEdge2d (Polygon2d P, Point2d p);
 
@@ -278,19 +337,33 @@ template <class Point> std::vector<double> rayPoly_intersect2d (Point r0, Point 
 // get a vector of distances from s.a to each point where the line segment s intersects the polygon
 template <class Point> std::vector<double> segmentPoly_intersect2d (Polygon2d P, Line2d s);
 
-// get all points where the polygons intersects another geometry object (e.g., for use in clipping, union, or xor operations), ordered for polygon A
-std::vector<IPt> intersectionPoints2d (Polygon2d A, Polygon2d B);
-std::vector<IPt> intersectionPoints2d (Polygon2d A, Polyline2d B)
+// Return true if the chain in A that contains ipt[k].i should be treated as beginning inside of B; false otherwise
+template <class Poly> // Poly should be either a polyline or polygon object
+bool validateInOut (std::vector<IPt> p, size_t k, Poly A, Polygon2d B)
+
+// Return a vector of IPt objects with assigned states and culled of all points
+// that do not represent a new entrance or exit into/from B
+template <class Poly> // Poly should be either a polyline or polygon object
+std::vector<IPt> intersectionPoints2dState (std::vector<IPt> ipt, Poly A, Polygon2s B)
+
+// Get all points where a polygon or polyline intersects a polygon (e.g., for use in boolean operations)
+template <class Poly>  // Poly should be either a polyline or polygon object
+std::vector<IPt> intersectionPoints2d (Poly A, Polygon2d B)
 ```
 
 ## Boolean Operations
 ```cpp
 // AND = intersection = clip
+bool intersect (Point2d p, Line2d ab, double t);  // true if p lies within tolerance distance t of ab
+bool intersect (Line2d ab, Point2d p, double t);
+
+bool intersect (Point2d p, Polygon2d P);          // true if p is inside P with tolerance distance t (calls and interprets inPoly)
+bool intersect (Polygon2d P, Point2d p);
+
 Polygon2d polyAND (Polygon2d A, Polygon2d B);
 Polygon2d intersect (Polygon2d A, Polygon2d B);   // calls polyAND
 Polygon2d clip2d (Polygon2d A, Polygon2d B);      // calls PolyAND
-Polyline2d intersect (Polygon2d P, Polyline2d L); // get polyline clipped by polygon
-bool intersect (Polygon2d P, Point2d p);          // true if p is inside P (calls and interprets inPoly)
+Polyline2d intersect (Polyline2d L, Polygon2d P); // get polyline clipped by polygon
 
 // OR = union = merge = dissolve
 // <!> UNDER CONSTRUCTION <!>
