@@ -316,15 +316,9 @@ std::vector<IPt> intersectionPoints2d ( const Poly& A,
                     if ( Ad < 0.0 ) continue; // no intersection
                     double Bd = lineIntersect2d(BL, AL);
                     
-                    // relationship between segments
-                    // 1=(i,i+1) points to right of (j,j+1)
-                    // -1=left
-                    // 0=parallel
-                    int R = isRight(AL.r, BL.r);
-                    
                     // add this intersection point
-                    ip.push_back(
-                        IPt(i, Ad / AL.len, j, Bd / BL.len, 0, R));
+                    ip.push_back(IPt(i, Ad / AL.len,
+                        j, Bd / BL.len, IPt::UNSET));
                 }
             }
         }
