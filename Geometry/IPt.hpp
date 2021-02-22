@@ -15,6 +15,9 @@
 // 02/11/2021 - Brennan Young                                      //
 // - overloaded reverseIPt to reverse a single IPt object.         //
 // - numerous improvements to the isSame algorithm.                //
+// 02/16/2021 - Brennan Young                                      //
+// - corrected error in isSame when determine if an intersected    //
+//   vertex should be considered for deletion.                     //
 /////////////////////////////////////////////////////////////////////
 
 #ifndef YOUNG_GEOMETRY_INTERSECTIONPOINT_20210205
@@ -41,7 +44,7 @@ public:
     char   state;   // indicator of what the point represents
     
     // constructors / destructor
-    IPt (size_t I, double A, size_t J, double B, char S=0, char r=0)
+    IPt (size_t I, double A, size_t J, double B, char S=0)
         : i(I), a(A), j(J), b(B), state(S) {}
     IPt (const IPt& P)
         : i(P.i), a(P.a), j(P.j), b(P.b), state(P.state) {}
@@ -77,18 +80,6 @@ public:
 /////////////////////////////////////////////////////////////////////
 
 
-// Convert from IPt to Point2d.
-// -- Arguments --
-// P : IPt to convert.
-// A : Container of vertex P.i; vertex must be a Point2d object.
-template <class PointArray>
-Point2d IPtToPoint2d ( const IPt& P, const PointArray& A )
-{
-    Line2d L (A[P.i], A[P.i+1]);
-    return Point2d (L.a.x + L.r.x * L.len * P.a,
-                    L.a.y + L.r.y * L.len * P.a);
-}
-
 // Reverse an intersection point -- (i,a) and (j,b) are swapped.
 // Does not change the intersection point's state, as this cannot be
 // determined with the information given.
@@ -114,11 +105,17 @@ std::vector<IPt> reverseIPt ( const std::vector<IPt>& P )
     return out;
 }
 
-
-/////////////////////////////////////////////////////////////////////
-// Comparison                                                      //
-/////////////////////////////////////////////////////////////////////
-
+// Convert from IPt to Point2d.
+// -- Arguments --
+// P : IPt to convert.
+// A : Container of vertex P.i; vertex must be a Point2d object.
+template <class PointArray>
+Point2d IPtToPoint2d ( const IPt& P, const PointArray& A )
+{
+    Line2d L (A[P.i], A[P.i+1]);
+    return Point2d (L.a.x + L.r.x * L.len * P.a,
+                    L.a.y + L.r.y * L.len * P.a);
+}
 
 // Get previous and next line segments from an intersection point
 // involving vertex i in A.
@@ -166,6 +163,24 @@ int segmentsBeforeAfter ( size_t i, double a,
     }
     
     return flag ? 0 : 1;
+}
+
+
+/////////////////////////////////////////////////////////////////////
+// Comparison                                                      //
+/////////////////////////////////////////////////////////////////////
+
+
+// Return true if an intersection is at a vertex in a.
+bool isVertexA ( const IPt& ip )
+{
+    return !(ip.a > 0.0000001 && ip.a < 0.9999999);
+}
+
+// Return true if an intersection is at a vertex in b.
+bool isVertexB ( const IPt& ip )
+{
+    return !(ip.b > 0.0000001 && ip.b < 0.9999999);
 }
 
 // Determine if two intersection points are effectively identical.
@@ -338,14 +353,10 @@ int isSame ( const IPt& a, const IPt& b, const Poly& A,
     // if both intersections represent the same distance from i
     // to i+1, can remove one of them UNLESS intersecting at a
     // vertex in B, where B touches but does not penetrate A
-    if ( a.i == b.i ) {
-        if ( (a.a > 0 && a.a < 1) && !(a.b > 0 && a.b < 1) ) {
-            Line2d ki (A[a.i], A[a.i+1]); // (i,i+1) in a
-            Line2d kj (B[a.j], B[a.j+1]); // (j,j+1) in a
-            Line2d mj (B[b.j], B[b.j+1]); // (j,j+1) in b
-            
-            int aR = isRight(kj.r, ki.r);
-            int bR = isRight(mj.r, ki.r);
+    if ( a.i == b.i && fabs(a.a - b.a) < 0.0000001 ) {
+        if ( !isVertexA(a) && isVertexB(a) ) {
+            int aR = jointRight(a, A, B);
+            int bR = jointRight(b, A, B);
             if ( aR != 0 && bR != 0 && aR != bR ) return 0;
         }
         
