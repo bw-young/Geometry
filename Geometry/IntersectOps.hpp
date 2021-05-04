@@ -65,6 +65,11 @@
 // - added intersection(Point2d, Line2d).                          //
 // - renamed from PolyIntersect.hpp to IntersectOps.hpp.           //
 // - update to utilize Polygon's new structure.                    //
+// 05/03/2021 - Brennan Young                                      //
+// - fixed an issue where intersect(Polyline, Polygon) wouldn't    //
+//   properly check for empty objects.                             //
+// - fixed an issue where adding vertices in intersect(Polyline,   //
+//   Polygon) could go out of bounds.                              //
 /////////////////////////////////////////////////////////////////////
 
 #ifndef YOUNG_GEOMETRY_POLYINTERSECT_20201228
@@ -520,7 +525,7 @@ Polygon2d clip2d ( const Polygon2d& A, const Polygon2d& B )
 // B.
 Polyline2d intersect ( const Polyline2d& A, const Polygon2d& B )
 {
-    if ( B.size() + A.size() == 0 ) return Polyline2d();
+    if ( B.size() == 0 || A.size() == 0 ) return Polyline2d();
     
     // get intersection points
     std::vector<IPt> ip = intersectionPoints2d(A, B);
@@ -575,6 +580,7 @@ Polyline2d intersect ( const Polyline2d& A, const Polygon2d& B )
                     && i == ip[k].i
                     && ip[k].a < 0.0000001)
                     && !(k-1 < ip.size()
+                    && i-1 < A.size()
                     && i-1 == ip[k-1].i
                     && fabs(ip[k-1].a - 1) < 0.0000001) ) {
                 chain.push_back(A[i]);
